@@ -165,10 +165,12 @@ class ExpenseCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      '₹${expense.amount.toStringAsFixed(0)}',
+                      '${expense.type == 'credit' ? '+' : '-'}₹${expense.amount.toStringAsFixed(0)}',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.onSurface,
+                        color: expense.type == 'credit' 
+                            ? AppTheme.secondaryColor 
+                            : AppTheme.accentColor,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -178,7 +180,7 @@ class ExpenseCard extends StatelessWidget {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: _getSourceColor(expense.source).withOpacity(0.1),
+                        color: _getSourceColor(expense.source, expense.type).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -186,7 +188,7 @@ class ExpenseCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 9,
                           fontWeight: FontWeight.w600,
-                          color: _getSourceColor(expense.source),
+                          color: _getSourceColor(expense.source, expense.type),
                         ),
                       ),
                     ),
@@ -230,7 +232,9 @@ class ExpenseCard extends StatelessWidget {
     }
   }
 
-  Color _getSourceColor(String source) {
+  Color _getSourceColor(String source, String type) {
+    if (type == 'credit') return AppTheme.secondaryColor;
+    
     switch (source) {
       case 'sms':
         return AppTheme.secondaryColor;

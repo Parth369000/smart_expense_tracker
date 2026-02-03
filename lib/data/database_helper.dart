@@ -20,7 +20,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -42,7 +42,8 @@ class DatabaseHelper {
         upiId TEXT,
         isSynced INTEGER DEFAULT 0,
         createdAt TEXT NOT NULL,
-        updatedAt TEXT
+        updatedAt TEXT,
+        type TEXT DEFAULT 'debit'
       )
     ''');
 
@@ -108,7 +109,9 @@ class DatabaseHelper {
   }
 
   Future _upgradeDB(Database db, int oldVersion, int newVersion) async {
-    // Handle future migrations here
+    if (oldVersion < 2) {
+      await db.execute("ALTER TABLE expenses ADD COLUMN type TEXT DEFAULT 'debit'");
+    }
   }
 
   Future<void> _insertDefaultCategories(Database db) async {

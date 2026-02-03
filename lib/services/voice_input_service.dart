@@ -10,67 +10,38 @@ class VoiceInputService {
   final SpeechToText _speechToText = SpeechToText();
   bool _isInitialized = false;
 
+  // Gujarati to English digit mapping
+  final Map<String, String> _digitMap = {
+    '૦': '0', '૧': '1', '૨': '2', '૩': '3', '૪': '4',
+    '૫': '5', '૬': '6', '૭': '7', '૮': '8', '૯': '9'
+  };
+
   // Patterns for voice command parsing
   final Map<String, RegExp> _patterns = {
-    // Amount patterns
+    // Amount patterns (supports "5k", "1.5k", currency symbols)
     'amount': RegExp(
-      r'(?:rupees?|rs\.?|inr|₹)?\s*(\d+(?:,\d{3})*(?:\.\d{1,2})?)',
-      caseSensitive: false,
-    ),
-    'amount_words': RegExp(
-      r'(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand)',
+      r'(?:rupees?|rs\.?|inr|₹|રૂ|રૂપિયા)?\s*(\d+(?:,\d{3})*(?:\.\d{1,2})?k?)',
       caseSensitive: false,
     ),
     
-    // Category indicators
-    'category_food': RegExp(
-      r'\b(food|lunch|dinner|breakfast|snack|meal|eat|restaurant|cafe|coffee|tea)\b',
-      caseSensitive: false,
-    ),
-    'category_transport': RegExp(
-      r'\b(transport|travel|cab|taxi|auto|bus|train|metro|fuel|petrol|diesel|ride)\b',
-      caseSensitive: false,
-    ),
-    'category_shopping': RegExp(
-      r'\b(shopping|shop|buy|purchase|clothes|dress|shoes|mall|store)\b',
-      caseSensitive: false,
-    ),
-    'category_groceries': RegExp(
-      r'\b(grocery|groceries|vegetable|fruit|milk|bread|rice|dal)\b',
-      caseSensitive: false,
-    ),
-    'category_bills': RegExp(
-      r'\b(bill|electricity|water|gas|phone|mobile|recharge|wifi|broadband)\b',
-      caseSensitive: false,
-    ),
-    'category_entertainment': RegExp(
-      r'\b(movie|film|show|entertainment|game|fun|party)\b',
-      caseSensitive: false,
-    ),
-    'category_health': RegExp(
-      r'\b(health|medical|doctor|medicine|pharmacy|hospital|clinic)\b',
-      caseSensitive: false,
-    ),
-    'category_education': RegExp(
-      r'\b(education|book|course|class|tuition|study|learning)\b',
-      caseSensitive: false,
-    ),
-  };
-
-  // Word to number mapping
-  final Map<String, int> _wordToNumber = {
-    'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5,
-    'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10,
-    'eleven': 11, 'twelve': 12, 'thirteen': 13, 'fourteen': 14, 'fifteen': 15,
-    'sixteen': 16, 'seventeen': 17, 'eighteen': 18, 'nineteen': 19, 'twenty': 20,
-    'thirty': 30, 'forty': 40, 'fifty': 50, 'sixty': 60, 'seventy': 70,
-    'eighty': 80, 'ninety': 90, 'hundred': 100, 'thousand': 1000,
+    // Date indicators
+    'today': RegExp(r'\b(today|aaje|આજે)\b', caseSensitive: false),
+    'yesterday': RegExp(r'\b(yesterday|gaikale|ગઈકાલે)\b', caseSensitive: false),
+    
+    // Category Keywords (English + Gujarati)
+    'cat_food': RegExp(r'\b(food|lunch|dinner|breakfast|snack|restaurant|cafe|coffee|tea|zomato|swiggy|khoorak|jamvanu|nasto|khavanu|bhojan|જમવાનું|નાસ્તો|ખોરાક)\b', caseSensitive: false),
+    'cat_transport': RegExp(r'\b(transport|travel|cab|taxi|auto|bus|train|metro|fuel|petrol|diesel|uber|ola|rapido|bhadu|rickshaw|rent|bada|ભાડું|રિક્ષા|બસ)\b', caseSensitive: false),
+    'cat_shopping': RegExp(r'\b(shopping|shop|buy|clothes|dress|shoes|mall|store|myntra|amazon|flipkart|kapda|kharidi|કપડાં|ખરીદી)\b', caseSensitive: false),
+    'cat_groceries': RegExp(r'\b(grocery|groceries|vegetable|fruit|milk|bread|rice|dal|bigbasket|blinkit|zepto|shakbhaji|dudh|kariyana|શાકભાજી|દૂધ|કરિયાણું)\b', caseSensitive: false),
+    'cat_bills': RegExp(r'\b(bill|electricity|water|gas|phone|mobile|recharge|wifi|broadband|light|bijli|lightbill|વીજળી|બિલ)\b', caseSensitive: false),
+    'cat_entertainment': RegExp(r'\b(movie|film|show|entertainment|game|party|netflix|prime|hotstar|theater|cinema|manoranjan|મનોરંજન)\b', caseSensitive: false),
+    'cat_health': RegExp(r'\b(health|medical|doctor|medicine|pharmacy|hospital|clinic|dava|dawakhana|hospital|દવા|ડોક્ટર)\b', caseSensitive: false),
+    'cat_education': RegExp(r'\b(education|book|course|class|tuition|study|school|college|fee|bhantar|schcool|abhayas|શિક્ષણ|ચોપડી|ફી)\b', caseSensitive: false),
   };
 
   /// Initialize speech recognition
   Future<bool> initialize() async {
     if (_isInitialized) return true;
-    
     try {
       _isInitialized = await _speechToText.initialize(
         onError: (error) => print('Speech error: $error'),
@@ -91,17 +62,22 @@ class VoiceInputService {
     return _speechToText.isAvailable;
   }
 
-  /// Start listening for voice input
+  /// Start listening for voice input (English + Gujarati)
   Future<void> startListening({
     required Function(String) onResult,
     required Function() onDone,
-    String localeId = 'en_IN',
   }) async {
-    if (!await isAvailable()) {
+    if (!await _isInitialized && !await initialize()) {
       onDone();
       return;
     }
 
+    // Prefer Hindi/Gujarati/English mix if available, mostly auto-detected by engine on Android
+    // Specifying accurate locale helps. 
+    // Android often supports "en_IN" which handles Hinglish well.
+    // For specific Gujarati users, "gu_IN" is better.
+    // We try to listen with auto-detection or fallback to en_IN/gu_IN.
+    
     await _speechToText.listen(
       onResult: (result) {
         if (result.finalResult) {
@@ -109,187 +85,161 @@ class VoiceInputService {
           onDone();
         }
       },
-      localeId: localeId,
-      listenMode: ListenMode.confirmation,
+      localeId: 'gu_IN', // Prioritizing Gujarati/Indian English mix
+      listenMode: ListenMode.search, // Better for short phrases
       partialResults: false,
     );
   }
 
-  /// Stop listening
-  Future<void> stopListening() async {
-    await _speechToText.stop();
-  }
+  Future<void> stopListening() async => await _speechToText.stop();
 
-  /// Check if currently listening
   bool get isListening => _speechToText.isListening;
 
-  /// Parse voice input to expense
+  /// Main Parsing Logic
   VoiceParsedExpense? parseVoiceInput(String text) {
     try {
-      // Extract amount
-      final amount = _extractAmount(text);
-      if (amount == null || amount <= 0) {
-        return null;
-      }
+      // 1. Normalize Text (Gujarati digits -> English, lowercase)
+      String normalizedText = _normalizeText(text);
 
-      // Extract category
-      final category = _extractCategory(text);
+      // 2. Extract Amount
+      final amount = _extractAmount(normalizedText);
+      if (amount == null || amount <= 0) return null;
 
-      // Extract description/title
-      final title = _extractTitle(text) ?? 'Voice Expense';
+      // 3. Extract Category
+      final category = _extractCategory(normalizedText);
 
-      // Extract merchant if mentioned
-      final merchant = _extractMerchant(text);
+      // 4. Extract Date
+      final date = _extractDate(normalizedText);
+
+      // 5. Extract Merchant
+      final merchant = _extractMerchant(normalizedText);
+
+      // 6. Extract Title
+      final title = _extractTitle(text, amount); 
 
       return VoiceParsedExpense(
         amount: amount,
         category: category,
         title: title,
+        date: date,
         merchantName: merchant,
         rawText: text,
       );
     } catch (e) {
-      print('Error parsing voice input: $e');
+      print('Parsing Error: $e');
       return null;
     }
   }
 
-  /// Extract amount from voice text
+  String _normalizeText(String text) {
+    String res = text.toLowerCase();
+    _digitMap.forEach((gu, en) {
+      res = res.replaceAll(gu, en);
+    });
+    return res;
+  }
+
   double? _extractAmount(String text) {
-    // Try numeric amount first
+    // Check for "k" notation first e.g. "5k" -> 5000
+    // Regex handles digits with optional 'k'
     final match = _patterns['amount']!.firstMatch(text);
     if (match != null) {
-      final amountStr = match.group(1)?.replaceAll(',', '');
-      return double.tryParse(amountStr ?? '');
-    }
-
-    // Try word numbers
-    return _parseWordNumbers(text);
-  }
-
-  /// Parse word numbers to actual number
-  double? _parseWordNumbers(String text) {
-    final matches = _patterns['amount_words']!.allMatches(text);
-    if (matches.isEmpty) return null;
-
-    double total = 0;
-    double current = 0;
-
-    for (final match in matches) {
-      final word = match.group(0)?.toLowerCase() ?? '';
-      final value = _wordToNumber[word] ?? 0;
-
-      if (value == 100 || value == 1000) {
-        current = (current == 0 ? 1.0 : current) * value;
-        total += current;
-        current = 0;
-      } else if (value >= 20) {
-        current += value;
-      } else {
-        current += value;
+      String rawAmt = match.group(1)!.replaceAll(',', '');
+      double multiplier = 1.0;
+      
+      if (rawAmt.endsWith('k')) {
+        multiplier = 1000.0;
+        rawAmt = rawAmt.substring(0, rawAmt.length - 1);
       }
+      
+      final val = double.tryParse(rawAmt);
+      if (val != null) return val * multiplier;
     }
-
-    total += current;
-    return total > 0 ? total : null;
+    return null; // Could allow word-parsing fallback if needed
   }
 
-  /// Extract category from voice text
   String _extractCategory(String text) {
-    final lowerText = text.toLowerCase();
-
-    if (_patterns['category_food']!.hasMatch(lowerText)) return 'food';
-    if (_patterns['category_transport']!.hasMatch(lowerText)) return 'transport';
-    if (_patterns['category_shopping']!.hasMatch(lowerText)) return 'shopping';
-    if (_patterns['category_groceries']!.hasMatch(lowerText)) return 'groceries';
-    if (_patterns['category_bills']!.hasMatch(lowerText)) return 'bills';
-    if (_patterns['category_entertainment']!.hasMatch(lowerText)) return 'entertainment';
-    if (_patterns['category_health']!.hasMatch(lowerText)) return 'health';
-    if (_patterns['category_education']!.hasMatch(lowerText)) return 'education';
-
+    if (_patterns['cat_food']!.hasMatch(text)) return 'food';
+    if (_patterns['cat_transport']!.hasMatch(text)) return 'transport';
+    if (_patterns['cat_shopping']!.hasMatch(text)) return 'shopping';
+    if (_patterns['cat_groceries']!.hasMatch(text)) return 'groceries';
+    if (_patterns['cat_bills']!.hasMatch(text)) return 'bills';
+    if (_patterns['cat_entertainment']!.hasMatch(text)) return 'entertainment';
+    if (_patterns['cat_health']!.hasMatch(text)) return 'health';
+    if (_patterns['cat_education']!.hasMatch(text)) return 'education';
+    
     return 'others';
   }
 
-  /// Extract title/description from voice text
-  String? _extractTitle(String text) {
-    // Remove amount-related words
-    var cleaned = text
-        .replaceAll(_patterns['amount']!, '')
-        .replaceAll(_patterns['amount_words']!, '');
-
-    // Remove common filler words
-    final fillers = [
-      'spent', 'paid', 'for', 'on', 'at', 'to', 'the', 'a', 'an',
-      'rupees', 'rs', 'inr', 'i', 'my', 'me', 'was', 'is', 'it',
-      'today', 'yesterday', 'just', 'now', 'add', 'expense',
-    ];
-    
-    for (final filler in fillers) {
-      cleaned = cleaned.replaceAll(RegExp(r'\b' + filler + r'\b', caseSensitive: false), '');
+  DateTime _extractDate(String text) {
+    final now = DateTime.now();
+    if (_patterns['yesterday']!.hasMatch(text)) {
+      return now.subtract(const Duration(days: 1));
     }
-
-    // Clean up extra spaces
-    cleaned = cleaned.replaceAll(RegExp(r'\s+'), ' ').trim();
-
-    // Capitalize first letter
-    if (cleaned.isNotEmpty) {
-      cleaned = cleaned[0].toUpperCase() + cleaned.substring(1);
-    }
-
-    return cleaned.isNotEmpty ? cleaned : null;
+    return now; // Default to today
   }
 
-  /// Extract merchant name from voice text
   String? _extractMerchant(String text) {
-    // Look for "at" or "to" followed by a name
-    final pattern = RegExp(r'(?:at|to|from)\s+([A-Za-z][A-Za-z0-9\s&]+)', caseSensitive: false);
-    final match = pattern.firstMatch(text);
-    return match?.group(1)?.trim();
+    // Pattern 1: English (at/to/from Name)
+    final engPattern = RegExp(r'(?:at|to|from)\s+([A-Za-z][A-Za-z0-9\s&]+)', caseSensitive: false);
+    final engMatch = engPattern.firstMatch(text);
+    if (engMatch != null) return engMatch.group(1)?.trim();
+
+    // Pattern 2: Gujarati (Name ne apya / Name pase thi)
+    // "Rahul ne apya", "Rahul pasethi lidha"
+    final gujPattern = RegExp(r'(\S+)\s+(?:ne|pase\s*thi|પાસેથી|ને|પાસેથી)\b', caseSensitive: false);
+    final gujMatch = gujPattern.firstMatch(text);
+    if (gujMatch != null) return gujMatch.group(1)?.trim();
+
+    return null;
   }
 
-  /// Convert parsed voice expense to Expense model
+  String _extractTitle(String text, double amount) {
+    // Simple heuristic: Take the original text, usually it's short enough to be the title too.
+    // Or just a standard format.
+    // Let's return the Capitalized text for now, maybe stripping amount if convenient.
+    return text[0].toUpperCase() + text.substring(1);
+  }
+
   Expense toExpense(VoiceParsedExpense parsed) {
     return Expense(
       title: parsed.title,
       amount: parsed.amount,
       category: parsed.category,
-      date: DateTime.now(),
-      notes: 'Added via voice: "${parsed.rawText}"',
+      date: parsed.date,
+      notes: 'Voice: ${parsed.rawText}',
       source: 'voice',
       merchantName: parsed.merchantName,
       createdAt: DateTime.now(),
     );
   }
 
-  /// Get quick voice command suggestions
   List<String> getQuickCommands() {
     return [
-      'Spent 500 rupees on lunch',
-      'Paid 200 for auto ride',
-      'Spent 1500 on groceries',
-      'Paid electricity bill 1200',
-      'Spent 3000 on shopping',
-      'Paid 800 for dinner at restaurant',
+      '500 for lunch (૫૦૦ જમવાના)',
+      '1.5k shopping (૧.૫k ખરીદી)',
+      'Auto fare 200 (રિક્ષા ભાડું ૨૦૦)',
+      'Yesterday 500 petrol (ગઈકાલે પ પેટ્રોલ)',
     ];
   }
-
   void dispose() {
     _speechToText.cancel();
   }
 }
 
-/// Parsed expense from voice input
 class VoiceParsedExpense {
   final double amount;
   final String category;
   final String title;
-  final String? merchantName;
+  final DateTime date;
   final String rawText;
+  final String? merchantName;
 
   VoiceParsedExpense({
     required this.amount,
     required this.category,
     required this.title,
+    required this.date,
     this.merchantName,
     required this.rawText,
   });

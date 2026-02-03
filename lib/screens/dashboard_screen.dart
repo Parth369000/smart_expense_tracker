@@ -272,51 +272,74 @@ class _DashboardHomeState extends State<DashboardHome> {
               height: 180,
               child: BlocBuilder<ExpenseBloc, ExpenseState>(
                 builder: (context, state) {
-                  double totalExpenses = 0;
-                  double todayExpenses = 0;
-                  double monthlyExpenses = 0;
-
+                  double totalIncome = 0;
+                  double totalExpense = 0;
+                  double todayExpense = 0;
+                  
                   // Use data from unified state
                   final now = DateTime.now();
                   final today = DateTime(now.year, now.month, now.day);
                   final monthStart = DateTime(now.year, now.month, 1);
 
                   for (final expense in state.expenses) {
-                    totalExpenses += expense.amount;
-                    
-                    if (expense.date.isAfter(today.subtract(const Duration(days: 1)))) {
-                      todayExpenses += expense.amount;
-                    }
-                    
-                    if (expense.date.isAfter(monthStart.subtract(const Duration(days: 1)))) {
-                      monthlyExpenses += expense.amount;
+                    if (expense.type == 'credit') {
+                      totalIncome += expense.amount;
+                    } else {
+                      totalExpense += expense.amount;
+                      
+                      // Fix: Compare dates properly by stripping time
+                      final expenseDate = DateTime(
+                        expense.date.year, 
+                        expense.date.month, 
+                        expense.date.day
+                      );
+                      
+                      if (expenseDate.isAtSameMomentAs(today)) {
+                        todayExpense += expense.amount;
+                      }
                     }
                   }
+
+                  final balance = totalIncome - totalExpense;
 
                   return ListView(
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     children: [
                       SummaryCard(
-                        title: 'Today\'s Expenses',
-                        amount: '₹${todayExpenses.toStringAsFixed(0)}',
-                        subtitle: DateFormat('dd MMM yyyy').format(DateTime.now()),
+                        title: 'Today\'s Spend',
+                        amount: '₹${todayExpense.toStringAsFixed(0)}',
+                        subtitle: DateFormat('dd MMM').format(DateTime.now()),
                         icon: Icons.today,
+                        color: AppTheme.warningColor,
+                      ),
+                      SummaryCard(
+                        title: 'Balance',
+                        amount: '₹${balance.toStringAsFixed(0)}',
+                        subtitle: 'Available',
+                        icon: Icons.account_balance,
                         color: AppTheme.primaryColor,
                       ),
                       SummaryCard(
-                        title: 'This Month',
-                        amount: '₹${monthlyExpenses.toStringAsFixed(0)}',
-                        subtitle: DateFormat('MMMM yyyy').format(DateTime.now()),
-                        icon: Icons.calendar_month,
+                        title: 'Credited',
+                        amount: '₹${totalIncome.toStringAsFixed(0)}',
+                        subtitle: 'Total Income',
+                        icon: Icons.arrow_downward,
                         color: AppTheme.secondaryColor,
                       ),
                       SummaryCard(
-                        title: 'Total Expenses',
-                        amount: '₹${totalExpenses.toStringAsFixed(0)}',
-                        subtitle: 'All time',
-                        icon: Icons.account_balance_wallet,
+                        title: 'Debited',
+                        amount: '₹${totalExpense.toStringAsFixed(0)}',
+                        subtitle: 'Total Expense',
+                        icon: Icons.arrow_upward,
                         color: AppTheme.accentColor,
+                      ),
+                      SummaryCard(
+                        title: 'Today\'s Spend',
+                        amount: '₹${todayExpense.toStringAsFixed(0)}',
+                        subtitle: DateFormat('dd MMM').format(DateTime.now()),
+                        icon: Icons.today,
+                        color: AppTheme.warningColor,
                       ),
                     ],
                   );
@@ -346,7 +369,7 @@ class _DashboardHomeState extends State<DashboardHome> {
                         QuickActionButton(
                           label: 'Sync SMS',
                           icon: Icons.sms,
-                          color: AppTheme.secondaryColor,
+                          color: AppTheme.primaryColor,
                           onTap: () {
                             context.read<ExpenseBloc>().add(
                               const SyncSMSExpenses(daysBack: 30),
@@ -362,7 +385,7 @@ class _DashboardHomeState extends State<DashboardHome> {
                         QuickActionButton(
                           label: 'View Reports',
                           icon: Icons.pie_chart,
-                          color: AppTheme.primaryColor,
+                          color: AppTheme.secondaryColor,
                           onTap: () {
                             // Navigate to analytics
                           },
@@ -371,7 +394,7 @@ class _DashboardHomeState extends State<DashboardHome> {
                         QuickActionButton(
                           label: 'Set Budget',
                           icon: Icons.savings,
-                          color: AppTheme.warningColor,
+                          color: AppTheme.accentColor,
                           onTap: () {
                             // Navigate to budget
                           },

@@ -14,6 +14,7 @@ class Expense extends Equatable {
   final bool isSynced;
   final DateTime createdAt;
   final DateTime? updatedAt;
+  final String type; // 'debit' or 'credit'
 
   const Expense({
     this.id,
@@ -29,6 +30,7 @@ class Expense extends Equatable {
     this.isSynced = false,
     required this.createdAt,
     this.updatedAt,
+    this.type = 'debit',
   });
 
   Expense copyWith({
@@ -45,6 +47,7 @@ class Expense extends Equatable {
     bool? isSynced,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? type,
   }) {
     return Expense(
       id: id ?? this.id,
@@ -60,6 +63,7 @@ class Expense extends Equatable {
       isSynced: isSynced ?? this.isSynced,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      type: type ?? this.type,
     );
   }
 
@@ -78,6 +82,7 @@ class Expense extends Equatable {
       'isSynced': isSynced ? 1 : 0,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
+      'type': type,
     };
   }
 
@@ -98,6 +103,7 @@ class Expense extends Equatable {
       updatedAt: map['updatedAt'] != null 
           ? DateTime.parse(map['updatedAt'] as String) 
           : null,
+      type: map['type'] as String? ?? 'debit',
     );
   }
 

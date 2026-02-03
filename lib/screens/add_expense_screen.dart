@@ -30,6 +30,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   final _merchantController = TextEditingController();
 
   String _selectedCategory = 'others';
+  String _selectedType = 'debit'; // 'debit' or 'credit'
   DateTime _selectedDate = DateTime.now();
   List<ExpenseCategory> _categories = [];
   bool _isLoading = false;
@@ -50,6 +51,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       _merchantController.text = widget.expense!.merchantName ?? '';
       _selectedCategory = widget.expense!.category;
       _selectedDate = widget.expense!.date;
+      _selectedType = widget.expense!.type;
     } else if (widget.source == 'receipt') {
       _scanReceipt();
     } else if (widget.source == 'voice') {
@@ -112,6 +114,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             _titleController.text = parsed.title;
             _merchantController.text = parsed.merchantName ?? '';
             _selectedCategory = parsed.category;
+            _selectedDate = parsed.date;
             _notesController.text = 'Added via voice: "${parsed.rawText}"';
           });
           
@@ -160,6 +163,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
           ? null 
           : _merchantController.text.trim(),
       createdAt: widget.expense?.createdAt ?? DateTime.now(),
+      type: _selectedType,
     );
 
     if (widget.expense != null) {
@@ -201,6 +205,79 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Type Selection Segmented Button
+                      Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(bottom: 24),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey[300]!),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => setState(() => _selectedType = 'debit'),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: _selectedType == 'debit' 
+                                        ? AppTheme.accentColor 
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.horizontal(
+                                      left: const Radius.circular(11),
+                                      right: _selectedType == 'debit' 
+                                          ? const Radius.circular(11) 
+                                          : Radius.zero,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Debit',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: _selectedType == 'debit' 
+                                          ? Colors.white 
+                                          : Colors.grey[700],
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => setState(() => _selectedType = 'credit'),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: _selectedType == 'credit' 
+                                        ? AppTheme.secondaryColor 
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.horizontal(
+                                      right: const Radius.circular(11),
+                                      left: _selectedType == 'credit' 
+                                          ? const Radius.circular(11) 
+                                          : Radius.zero,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Credit',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: _selectedType == 'credit' 
+                                          ? Colors.white 
+                                          : Colors.grey[700],
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
                       // Voice Input Indicator
                       if (_isListening)
                         Container(
@@ -244,12 +321,26 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                           prefixStyle: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
-                            color: AppTheme.primaryColor,
+                            color: _selectedType == 'credit' 
+                                ? AppTheme.secondaryColor 
+                                : AppTheme.accentColor,
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: _selectedType == 'credit' 
+                                  ? AppTheme.secondaryColor 
+                                  : AppTheme.accentColor,
+                              width: 2,
+                            ),
                           ),
                         ),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
+                          color: _selectedType == 'credit' 
+                              ? AppTheme.secondaryColor 
+                              : AppTheme.accentColor,
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {

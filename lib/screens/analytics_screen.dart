@@ -254,25 +254,25 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                       label: 'Total Expenses',
                       value: '₹${summary.totalExpenses.toStringAsFixed(0)}',
                       icon: Icons.account_balance_wallet,
-                      color: AppTheme.primaryColor,
+                      color: AppTheme.accentColor,
                     ),
                     StatCard(
                       label: 'Daily Average',
                       value: '₹${summary.averageDaily.toStringAsFixed(0)}',
                       icon: Icons.today,
-                      color: AppTheme.secondaryColor,
+                      color: AppTheme.primaryColor,
                     ),
                     StatCard(
                       label: 'Monthly Average',
                       value: '₹${summary.averageMonthly.toStringAsFixed(0)}',
                       icon: Icons.calendar_month,
-                      color: AppTheme.accentColor,
+                      color: AppTheme.primaryLight,
                     ),
                     StatCard(
                       label: 'Transaction Count',
                       value: '${summary.topExpenses.length}',
                       icon: Icons.receipt_long,
-                      color: AppTheme.warningColor,
+                      color: AppTheme.secondaryColor,
                     ),
                   ],
                 ),
@@ -625,13 +625,7 @@ class StatCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: AppTheme.divider.withOpacity(0.5)),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
