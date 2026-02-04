@@ -339,13 +339,14 @@ class SMSService {
   }
 
   /// Fetch all SMS from inbox (for initial sync)
-  Future<List<Expense>> syncHistoricalSMS({int daysBack = 30}) async {
+  Future<Map<String, dynamic>> syncHistoricalSMS({int daysBack = 30}) async {
     if (!await hasPermissions()) {
       final granted = await requestPermissions();
-      if (!granted) return [];
+      if (!granted) return {'added': [], 'duplicates': 0};
     }
 
     final expenses = <Expense>[];
+    var duplicates = 0;
     final cutoffDate = DateTime.now().subtract(Duration(days: daysBack));
     
     try {
@@ -368,10 +369,25 @@ class SMSService {
         final transaction = _parseTransaction(body);
         if (transaction == null) continue;
 
-        // Check for duplicate
+        // Check for duplicate by ID first
         if (transaction.transactionId != null) {
           final existing = await _db.getExpenseByTransactionId(transaction.transactionId!);
-          if (existing != null) continue;
+          if (existing != null) {
+            duplicates++;
+            continue;
+          }
+        }
+
+        // Check for duplicate by content (Amount, Time, Merchant)
+        final potentialDuplicate = await _db.getPotentialDuplicate(
+          transaction.amount, 
+          transaction.merchant, 
+          transaction.date ?? date
+        );
+
+        if (potentialDuplicate != null) {
+          duplicates++;
+          continue;
         }
 
         final expense = Expense(
@@ -379,7 +395,7 @@ class SMSService {
           amount: transaction.amount,
           category: transaction.category,
           date: transaction.date ?? date,
-          notes: 'Auto-captured from SMS (historical)',
+          notes: 'Auto-captured from SMS',
           source: 'sms',
           merchantName: transaction.merchant,
           transactionId: transaction.transactionId,
@@ -394,7 +410,10 @@ class SMSService {
       print('Error syncing historical SMS: $e');
     }
 
-    return expenses;
+    return {
+      'added': expenses,
+      'duplicates': duplicates,
+    };
   }
 
   void dispose() {

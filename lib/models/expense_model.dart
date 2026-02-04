@@ -320,3 +320,21 @@ class ExpenseSummary extends Equatable {
         topExpenses, averageDaily, averageMonthly
       ];
 }
+
+// Dashboard Metrics Model
+class DashboardMetrics extends Equatable {
+  final double totalIncome;
+  final double totalExpense;
+  final double todayExpense;
+  final double balance;
+  
+  const DashboardMetrics({
+    required this.totalIncome,
+    required this.totalExpense,
+    required this.todayExpense,
+    required this.balance,
+  });
+
+  @override
+  List<Object?> get props => [totalIncome, totalExpense, todayExpense, balance];
+}

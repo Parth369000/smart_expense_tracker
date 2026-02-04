@@ -21,17 +21,16 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = [
-    const DashboardHome(),
-    const AnalyticsScreen(),
-    const BudgetScreen(),
-    const SettingsScreen(),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final List<Widget> screens = [
+      DashboardHome(onTabChange: (index) => setState(() => _currentIndex = index)),
+      const AnalyticsScreen(),
+      const BudgetScreen(),
+      const SettingsScreen(),
+    ];
     return Scaffold(
-      body: _screens[_currentIndex],
+      body: screens[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),
@@ -211,7 +210,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 }
 
 class DashboardHome extends StatefulWidget {
-  const DashboardHome({Key? key}) : super(key: key);
+  final Function(int) onTabChange;
+
+  const DashboardHome({Key? key, required this.onTabChange}) : super(key: key);
 
   @override
   State<DashboardHome> createState() => _DashboardHomeState();
@@ -221,7 +222,7 @@ class _DashboardHomeState extends State<DashboardHome> {
   @override
   void initState() {
     super.initState();
-    context.read<ExpenseBloc>().add(const LoadExpenses(limit: 50));
+    context.read<ExpenseBloc>().add(const LoadDashboardSummary());
     context.read<ExpenseBloc>().add(const LoadCategories());
   }
 
@@ -266,146 +267,206 @@ class _DashboardHomeState extends State<DashboardHome> {
             ),
           ),
 
-          // Summary Cards
+          // Balance Card
           SliverToBoxAdapter(
-            child: SizedBox(
-              height: 180,
-              child: BlocBuilder<ExpenseBloc, ExpenseState>(
-                builder: (context, state) {
-                  double totalIncome = 0;
-                  double totalExpense = 0;
-                  double todayExpense = 0;
-                  
-                  // Use data from unified state
-                  final now = DateTime.now();
-                  final today = DateTime(now.year, now.month, now.day);
-                  final monthStart = DateTime(now.year, now.month, 1);
+            child: BlocBuilder<ExpenseBloc, ExpenseState>(
+              builder: (context, state) {
+                final metrics = state.dashboardMetrics;
+                final totalIncome = metrics?.totalIncome ?? 0.0;
+                final totalExpense = metrics?.totalExpense ?? 0.0;
+                final balance = metrics?.balance ?? 0.0;
 
-                  for (final expense in state.expenses) {
-                    if (expense.type == 'credit') {
-                      totalIncome += expense.amount;
-                    } else {
-                      totalExpense += expense.amount;
-                      
-                      // Fix: Compare dates properly by stripping time
-                      final expenseDate = DateTime(
-                        expense.date.year, 
-                        expense.date.month, 
-                        expense.date.day
-                      );
-                      
-                      if (expenseDate.isAtSameMomentAs(today)) {
-                        todayExpense += expense.amount;
-                      }
-                    }
-                  }
-
-                  final balance = totalIncome - totalExpense;
-
-                  return ListView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    children: [
-                      SummaryCard(
-                        title: 'Today\'s Spend',
-                        amount: '₹${todayExpense.toStringAsFixed(0)}',
-                        subtitle: DateFormat('dd MMM').format(DateTime.now()),
-                        icon: Icons.today,
-                        color: AppTheme.warningColor,
-                      ),
-                      SummaryCard(
-                        title: 'Balance',
-                        amount: '₹${balance.toStringAsFixed(0)}',
-                        subtitle: 'Available',
-                        icon: Icons.account_balance,
-                        color: AppTheme.primaryColor,
-                      ),
-                      SummaryCard(
-                        title: 'Credited',
-                        amount: '₹${totalIncome.toStringAsFixed(0)}',
-                        subtitle: 'Total Income',
-                        icon: Icons.arrow_downward,
-                        color: AppTheme.secondaryColor,
-                      ),
-                      SummaryCard(
-                        title: 'Debited',
-                        amount: '₹${totalExpense.toStringAsFixed(0)}',
-                        subtitle: 'Total Expense',
-                        icon: Icons.arrow_upward,
-                        color: AppTheme.accentColor,
-                      ),
-                      SummaryCard(
-                        title: 'Today\'s Spend',
-                        amount: '₹${todayExpense.toStringAsFixed(0)}',
-                        subtitle: DateFormat('dd MMM').format(DateTime.now()),
-                        icon: Icons.today,
-                        color: AppTheme.warningColor,
+                return Container(
+                  margin: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppTheme.primaryColor,
+                        AppTheme.primaryDark,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.primaryColor.withOpacity(0.4),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
                       ),
                     ],
-                  );
-                },
-              ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Total Balance',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.8),
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '₹${balance.toStringAsFixed(0)}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const Icon(Icons.account_balance_wallet, color: Colors.white),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.arrow_downward, color: Colors.white, size: 16),
+                                ),
+                                const SizedBox(width: 12),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Income',
+                                      style: TextStyle(
+                                        color: Colors.white.withOpacity(0.8),
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    Text(
+                                      '₹${totalIncome.toStringAsFixed(0)}',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.arrow_upward, color: Colors.white, size: 16),
+                                ),
+                                const SizedBox(width: 12),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Expenses',
+                                      style: TextStyle(
+                                        color: Colors.white.withOpacity(0.8),
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    Text(
+                                      '₹${totalExpense.toStringAsFixed(0)}',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
 
           // Quick Actions
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Quick Actions',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                  _buildQuickAction(
+                    context,
+                    label: 'Sync SMS',
+                    icon: Icons.sms,
+                    color: AppTheme.secondaryColor,
+                    onTap: () {
+                      context.read<ExpenseBloc>().add(
+                        const SyncSMSExpenses(daysBack: 30),
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Syncing SMS expenses...')),
+                      );
+                    },
                   ),
-                  const SizedBox(height: 12),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        QuickActionButton(
-                          label: 'Sync SMS',
-                          icon: Icons.sms,
-                          color: AppTheme.primaryColor,
-                          onTap: () {
-                            context.read<ExpenseBloc>().add(
-                              const SyncSMSExpenses(daysBack: 30),
-                            );
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Syncing SMS expenses...'),
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(width: 12),
-                        QuickActionButton(
-                          label: 'View Reports',
-                          icon: Icons.pie_chart,
-                          color: AppTheme.secondaryColor,
-                          onTap: () {
-                            // Navigate to analytics
-                          },
-                        ),
-                        const SizedBox(width: 12),
-                        QuickActionButton(
-                          label: 'Set Budget',
-                          icon: Icons.savings,
-                          color: AppTheme.accentColor,
-                          onTap: () {
-                            // Navigate to budget
-                          },
-                        ),
-                      ],
-                    ),
+                  _buildQuickAction(
+                    context,
+                    label: 'Reports',
+                    icon: Icons.pie_chart,
+                    color: AppTheme.primaryColor,
+                    onTap: () => widget.onTabChange(1),
+                  ),
+                  _buildQuickAction(
+                    context,
+                    label: 'Budget',
+                    icon: Icons.savings,
+                    color: AppTheme.warningColor,
+                    onTap: () => widget.onTabChange(2),
+                  ),
+                  _buildQuickAction(
+                    context,
+                    label: 'Export',
+                    icon: Icons.download,
+                    color: AppTheme.accentColor,
+                    onTap: () {
+                      // TODO: Navigate to settings or trigger export
+                      widget.onTabChange(3);
+                    },
                   ),
                 ],
               ),
             ),
           ),
+          
+          const SliverPadding(padding: EdgeInsets.only(bottom: 24)),
 
           // Recent Expenses Header
           SliverToBoxAdapter(
@@ -564,6 +625,40 @@ class _DashboardHomeState extends State<DashboardHome> {
           const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
         ],
       ),
+    );
+  }
+  Widget _buildQuickAction(
+    BuildContext context, {
+    required String label,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Column(
+      children: [
+        InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Icon(icon, color: color, size: 28),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.onSurface,
+          ),
+        ),
+      ],
     );
   }
 }

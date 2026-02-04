@@ -256,6 +256,34 @@ class DatabaseHelper {
     return null;
   }
 
+  Future<Expense?> getPotentialDuplicate(double amount, String? merchant, DateTime date) async {
+    final db = await database;
+    
+    // Check for existing expense with same amount and roughly same time (+/- 5 minutes)
+     final start = date.subtract(const Duration(minutes: 5)).toIso8601String();
+     final end = date.add(const Duration(minutes: 5)).toIso8601String();
+
+     final whereClause = merchant != null 
+         ? 'amount = ? AND date >= ? AND date <= ? AND (merchantName LIKE ? OR title LIKE ?)'
+         : 'amount = ? AND date >= ? AND date <= ?';
+         
+     final whereArgs = merchant != null 
+         ? [amount, start, end, '%$merchant%', '%$merchant%']
+         : [amount, start, end];
+
+    final maps = await db.query(
+      'expenses',
+      where: whereClause,
+      whereArgs: whereArgs,
+      limit: 1,
+    );
+
+    if (maps.isNotEmpty) {
+      return Expense.fromMap(maps.first);
+    }
+    return null;
+  }
+
   Future<int> updateExpense(Expense expense) async {
     final db = await database;
     return await db.update(
@@ -281,8 +309,10 @@ class DatabaseHelper {
     List<dynamic> whereArgs = [];
     
     if (startDate != null && endDate != null) {
-      whereClause = 'WHERE date >= ? AND date <= ?';
+      whereClause = "WHERE date >= ? AND date <= ? AND type = 'debit'";
       whereArgs = [startDate.toIso8601String(), endDate.toIso8601String()];
+    } else {
+      whereClause = "WHERE type = 'debit'";
     }
     
     final result = await db.rawQuery(
@@ -408,7 +438,6 @@ class DatabaseHelper {
 
   Future<void> updateBudgetSpent(String categoryId, DateTime month, double amount) async {
     final db = await database;
-    final startOfMonth = DateTime(month.year, month.month, 1);
     
     final budget = await getBudgetForCategory(categoryId, month);
     if (budget != null) {
@@ -423,12 +452,50 @@ class DatabaseHelper {
 
   // ==================== ANALYTICS ====================
 
+  Future<DashboardMetrics> getDashboardMetrics() async {
+    final db = await database;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final tomorrow = today.add(const Duration(days: 1));
+
+    // Calculate Today's Expense
+    final todayResult = await db.rawQuery('''
+      SELECT SUM(amount) as total 
+      FROM expenses 
+      WHERE date >= ? AND date < ? AND type = 'debit'
+    ''', [today.toIso8601String(), tomorrow.toIso8601String()]);
+    final todayExpense = todayResult.first['total'] as double? ?? 0.0;
+
+    // Calculate Total Income
+    final incomeResult = await db.rawQuery('''
+      SELECT SUM(amount) as total 
+      FROM expenses 
+      WHERE type = 'credit'
+    ''');
+    final totalIncome = incomeResult.first['total'] as double? ?? 0.0;
+
+    // Calculate Total Expense
+    final expenseResult = await db.rawQuery('''
+      SELECT SUM(amount) as total 
+      FROM expenses 
+      WHERE type = 'debit'
+    ''');
+    final totalExpense = expenseResult.first['total'] as double? ?? 0.0;
+
+    return DashboardMetrics(
+      totalIncome: totalIncome,
+      totalExpense: totalExpense,
+      todayExpense: todayExpense,
+      balance: totalIncome - totalExpense,
+    );
+  }
+
   Future<Map<String, double>> getCategoryTotals(DateTime start, DateTime end) async {
     final db = await database;
     final result = await db.rawQuery('''
       SELECT category, SUM(amount) as total 
       FROM expenses 
-      WHERE date >= ? AND date <= ?
+      WHERE date >= ? AND date <= ? AND type = 'debit'
       GROUP BY category
     ''', [start.toIso8601String(), end.toIso8601String()]);
     
@@ -442,7 +509,7 @@ class DatabaseHelper {
     final result = await db.rawQuery('''
       SELECT date(date) as day, SUM(amount) as total 
       FROM expenses 
-      WHERE date >= ? AND date <= ?
+      WHERE date >= ? AND date <= ? AND type = 'debit'
       GROUP BY day
       ORDER BY day
     ''', [start.toIso8601String(), end.toIso8601String()]);
@@ -456,8 +523,8 @@ class DatabaseHelper {
     final db = await database;
     final maps = await db.query(
       'expenses',
-      where: 'date >= ? AND date <= ?',
-      whereArgs: [start.toIso8601String(), end.toIso8601String()],
+      where: 'date >= ? AND date <= ? AND type = ?',
+      whereArgs: [start.toIso8601String(), end.toIso8601String(), 'debit'],
       orderBy: 'amount DESC',
       limit: limit,
     );

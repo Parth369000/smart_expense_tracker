@@ -26,6 +26,9 @@ class CategoryPieChart extends StatelessWidget {
 
     return Column(
       children: [
+        Stack(
+          alignment: Alignment.center,
+          children: [
         SizedBox(
           height: 200,
           child: PieChart(
@@ -40,10 +43,10 @@ class CategoryPieChart extends StatelessWidget {
                 return PieChartSectionData(
                   value: entry.value,
                   title: '${percentage.toStringAsFixed(1)}%',
-                  radius: 80,
+                  radius: 50, // Thinner ring for donut
                   color: color,
                   titleStyle: const TextStyle(
-                    fontSize: 12,
+                    fontSize: 10,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
@@ -53,11 +56,36 @@ class CategoryPieChart extends StatelessWidget {
                   badgePositionPercentageOffset: 1.2,
                 );
               }).toList(),
-              sectionsSpace: 2,
-              centerSpaceRadius: 40,
+              sectionsSpace: 4, // More space
+              centerSpaceRadius: 50, // Hole in center
               centerSpaceColor: Colors.transparent,
             ),
+            ),
           ),
+          Positioned.fill(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'Total',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                      fontWeight: FontWeight.w500, // Fixed: removed invalid const
+                    ),
+                  ),
+                  Text(
+                    '₹${total.toStringAsFixed(0)}',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.primaryColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+         ],
         ),
         const SizedBox(height: 24),
         Wrap(
@@ -173,21 +201,29 @@ class DailyBarChart extends StatelessWidget {
             sideTitles: SideTitles(
               showTitles: true,
               getTitlesWidget: (value, meta) {
-                if (value.toInt() >= 0 && value.toInt() < sortedEntries.length) {
-                  final date = sortedEntries[value.toInt()].key;
-                  final day = date.split('-').last;
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(
-                      day,
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: AppTheme.onSurfaceLight,
-                      ),
+                final index = value.toInt();
+                if (index < 0 || index >= sortedEntries.length) return const SizedBox.shrink();
+                
+                // Smart interval calculation
+                int interval = 1;
+                if (sortedEntries.length > 7) interval = 2;
+                if (sortedEntries.length > 14) interval = 5;
+                if (sortedEntries.length > 30) interval = 7;
+                
+                if (index % interval != 0) return const SizedBox.shrink();
+
+                final date = sortedEntries[index].key;
+                final day = date.split('-').last;
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    day,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: AppTheme.onSurfaceLight,
                     ),
-                  );
-                }
-                return const SizedBox.shrink();
+                  ),
+                );
               },
               reservedSize: 30,
             ),
@@ -234,9 +270,9 @@ class DailyBarChart extends StatelessWidget {
               BarChartRodData(
                 toY: entry.value.value,
                 color: AppTheme.primaryColor,
-                width: 16,
+                width: 20, // Wider bars
                 borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(4),
+                  top: Radius.circular(6),
                 ),
                 gradient: LinearGradient(
                   colors: [
@@ -246,6 +282,11 @@ class DailyBarChart extends StatelessWidget {
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
                 ),
+                backDrawRodData: BackgroundBarChartRodData(
+                  show: true,
+                  toY: maxValue * 1.2,
+                  color: Colors.grey.withOpacity(0.05), // Subtle track background
+                )
               ),
             ],
           );

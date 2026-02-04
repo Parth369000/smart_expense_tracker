@@ -41,7 +41,7 @@ class ExpenseCard extends StatelessWidget {
               icon: Icons.edit,
               label: 'Edit',
               borderRadius: const BorderRadius.horizontal(
-                left: Radius.circular(12),
+                left: Radius.circular(16),
               ),
             ),
           if (onDelete != null)
@@ -52,16 +52,27 @@ class ExpenseCard extends StatelessWidget {
               icon: Icons.delete,
               label: 'Delete',
               borderRadius: const BorderRadius.horizontal(
-                right: Radius.circular(12),
+                right: Radius.circular(16),
               ),
             ),
         ],
       ),
-      child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -71,8 +82,8 @@ class ExpenseCard extends StatelessWidget {
                   width: 50,
                   height: 50,
                   decoration: BoxDecoration(
-                    color: categoryColor.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
+                    color: categoryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Icon(
                     _getCategoryIcon(category?.icon ?? expense.category),
@@ -89,8 +100,10 @@ class ExpenseCard extends StatelessWidget {
                     children: [
                       Text(
                         expense.title,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        style: const TextStyle(
+                          fontSize: 16,
                           fontWeight: FontWeight.w600,
+                          color: AppTheme.onSurface,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -98,61 +111,40 @@ class ExpenseCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: categoryColor.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              categoryName,
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: categoryColor,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          if (expense.merchantName != null)
-                            Expanded(
-                              child: Text(
-                                expense.merchantName!,
-                                style: Theme.of(context).textTheme.bodySmall,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
                           Icon(
-                            _getSourceIcon(expense.source),
-                            size: 12,
+                            Icons.calendar_today,
+                            size: 10,
                             color: AppTheme.onSurfaceLight,
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            DateFormat('dd MMM, hh:mm a').format(expense.date),
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                          if (expense.transactionId != null) ...[
-                            const SizedBox(width: 8),
-                            Icon(
-                              Icons.confirmation_number,
-                              size: 12,
+                            DateFormat('dd MMM').format(expense.date),
+                            style: const TextStyle(
+                              fontSize: 12,
                               color: AppTheme.onSurfaceLight,
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Ref: ${expense.transactionId!.substring(0, expense.transactionId!.length > 8 ? 8 : expense.transactionId!.length)}',
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          if (expense.merchantName != null) ...[
+                             Expanded(
+                               child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[100],
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  expense.merchantName!,
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    color: AppTheme.onSurfaceLight,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                               ),
+                             ),
                           ],
                         ],
                       ),
@@ -166,30 +158,21 @@ class ExpenseCard extends StatelessWidget {
                   children: [
                     Text(
                       '${expense.type == 'credit' ? '+' : '-'}₹${expense.amount.toStringAsFixed(0)}',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      style: TextStyle(
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: expense.type == 'credit' 
                             ? AppTheme.secondaryColor 
-                            : AppTheme.accentColor,
+                            : AppTheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _getSourceColor(expense.source, expense.type).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        expense.source.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w600,
-                          color: _getSourceColor(expense.source, expense.type),
-                        ),
+                    Text(
+                      categoryName,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: categoryColor,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],

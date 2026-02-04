@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../bloc/expense_bloc.dart';
 import '../theme/app_theme.dart';
 import '../widgets/charts.dart';
+import '../widgets/expense_card.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({Key? key}) : super(key: key);
@@ -37,13 +39,51 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Analytics'),
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Overview'),
-            Tab(text: 'Categories'),
-            Tab(text: 'Trends'),
-          ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(60),
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppTheme.divider),
+            ),
+            child: TabBar(
+              controller: _tabController,
+              dividerColor: Colors.transparent, // Remove the underline
+              indicatorSize: TabBarIndicatorSize.tab, // Fill the tab width
+              indicator: BoxDecoration(
+                color: AppTheme.primaryColor,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryColor.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              labelColor: Colors.white,
+              unselectedLabelColor: AppTheme.onSurfaceLight,
+              labelPadding: EdgeInsets.zero, // Use full width
+              labelStyle: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                fontFamily: 'Poppins',
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: 14,
+                fontFamily: 'Poppins',
+              ),
+              tabs: const [
+                Tab(text: 'Overview'),
+                Tab(text: 'Categories'),
+                Tab(text: 'Trends'),
+              ],
+            ),
+          ),
         ),
       ),
       body: Column(
@@ -184,27 +224,52 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(
+          color: Colors.white,
           border: Border.all(color: AppTheme.divider),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppTheme.onSurfaceLight,
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.calendar_today,
+                size: 16,
+                color: AppTheme.primaryColor,
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              DateFormat('dd MMM yyyy').format(date),
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppTheme.onSurfaceLight,
+                      fontSize: 10,
+                    ),
+                  ),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      DateFormat('dd MMM yy').format(date),
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13, // Slightly smaller base size
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -275,7 +340,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                       color: AppTheme.secondaryColor,
                     ),
                   ],
-                ),
+                ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.1, end: 0),
 
                 const SizedBox(height: 24),
 
@@ -291,40 +356,28 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                         ),
                       ),
                     ],
-                  ),
+                  ).animate().fadeIn(delay: 200.ms),
+                  
                   const SizedBox(height: 12),
-                  ...summary.topExpenses.take(5).map((expense) {
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: AppTheme.getCategoryColor(
-                            expense.category,
-                          ).withOpacity(0.2),
-                          child: Icon(
-                            Icons.receipt,
-                            color: AppTheme.getCategoryColor(expense.category),
-                            size: 20,
-                          ),
+                  
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: summary.topExpenses.take(5).length,
+                    itemBuilder: (context, index) {
+                      final expense = summary.topExpenses[index];
+                      // Using ExpenseCard for consistent look
+                      return Padding(
+                         padding: const EdgeInsets.only(bottom: 8),
+                         child: ExpenseCard(
+                          expense: expense,
+                          onTap: () {
+                             // Optional: Navigate to detail/edit
+                          },
                         ),
-                        title: Text(
-                          expense.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        subtitle: Text(
-                          DateFormat('dd MMM yyyy').format(expense.date),
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                        trailing: Text(
-                          '₹${expense.amount.toStringAsFixed(0)}',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
+                      ).animate().fadeIn(delay: (300 + (index * 50)).ms).slideX(begin: 0.1, end: 0);
+                    },
+                  ),
                 ],
               ],
             ),
@@ -621,11 +674,19 @@ class StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.divider.withOpacity(0.5)),
+        borderRadius: BorderRadius.circular(20), // More rounded
+        border: Border.all(color: Colors.grey.withOpacity(0.1)),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+            spreadRadius: 0,
+          ),
+        ],
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -638,12 +699,15 @@ class StatCard extends StatelessWidget {
             ),
             child: Icon(icon, color: color, size: 24),
           ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+          const SizedBox(height: 8),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           const SizedBox(height: 4),

@@ -2,41 +2,41 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class AppTheme {
-  // Primary Colors - Asian Paints Cardinal (2025 COTY)
-  static const Color primaryColor = Color(0xFF983243); // Cardinal
-  static const Color primaryLight = Color(0xFFC75B6E); // Lighter Cardinal
-  static const Color primaryDark = Color(0xFF6B1D2C); // Darker Cardinal
+  // Primary Colors - Modern Indigo
+  static const Color primaryColor = Color(0xFF6366F1); // Indigo 500
+  static const Color primaryLight = Color(0xFF818CF8); // Indigo 400
+  static const Color primaryDark = Color(0xFF4F46E5); // Indigo 600
   
-  // Secondary Colors - Emerald/Teal for Income/Success
-  static const Color secondaryColor = Color(0xFF00BFA6);
-  static const Color secondaryLight = Color(0xFF5DF2D6);
-  static const Color secondaryDark = Color(0xFF008E76);
+  // Secondary Colors - Modern Teal
+  static const Color secondaryColor = Color(0xFF14B8A6); // Teal 500
+  static const Color secondaryLight = Color(0xFF2DD4BF); // Teal 400
+  static const Color secondaryDark = Color(0xFF0D9488); // Teal 600
   
   // Accent Colors
-  static const Color accentColor = Color(0xFFB55B4B); // Terra (2024 COTY)
-  static const Color warningColor = Color(0xFFFFB800);
-  static const Color successColor = Color(0xFF4CAF50); // Keeping standard green for success states
-  static const Color errorColor = Color(0xFFD32F2F); // Standard Red for errors
+  static const Color accentColor = Color(0xFFF43F5E); // Rose 500
+  static const Color warningColor = Color(0xFFF59E0B); // Amber 500
+  static const Color successColor = Color(0xFF10B981); // Emerald 500
+  static const Color errorColor = Color(0xFFEF4444); // Red 500
   
-  // Neutral Colors - Silver Escapade
-  static const Color background = Color(0xFFF2F4F8); // Silver Escapadeish
+  // Neutral Colors - Modern Slate
+  static const Color background = Color(0xFFF8FAFC); // Slate 50
   static const Color surface = Color(0xFFFFFFFF);
-  static const Color onSurface = Color(0xFF2D3142);
-  static const Color onSurfaceLight = Color(0xFF9CA3AF);
-  static const Color divider = Color(0xFFE5E7EB);
+  static const Color onSurface = Color(0xFF1E293B); // Slate 800
+  static const Color onSurfaceLight = Color(0xFF64748B); // Slate 500
+  static const Color divider = Color(0xFFE2E8F0); // Slate 200
   
-  // Category Colors (Updated to be more earthy/modern)
+  // Category Colors (Modern Pastel)
   static const Map<String, Color> categoryColors = {
-    'food': Color(0xFFE57373), // Soft Red
-    'transport': Color(0xFF64B5F6), // Soft Blue
-    'shopping': Color(0xFFBA68C8), // Soft Purple
-    'entertainment': Color(0xFFFFD54F), // Soft Amber
-    'bills': Color(0xFF81C784), // Soft Green
-    'health': Color(0xFFFF8A65), // Deep Orange
-    'education': Color(0xFF7986CB), // Indigo
-    'travel': Color(0xFF4DD0E1), // Cyan
-    'groceries': Color(0xFFAED581), // Light Green
-    'others': Color(0xFF90A4AE), // Blue Grey
+    'food': Color(0xFFFB7185), // Rose
+    'transport': Color(0xFF60A5FA), // Blue
+    'shopping': Color(0xFFA78BFA), // Violet
+    'entertainment': Color(0xFFF472B6), // Pink
+    'bills': Color(0xFF34D399), // Emerald
+    'health': Color(0xFFFB923C), // Orange
+    'education': Color(0xFF818CF8), // Indigo
+    'travel': Color(0xFF22D3EE), // Cyan
+    'groceries': Color(0xFFA3E635), // Lime
+    'others': Color(0xFF94A3B8), // Slate
   };
 
   // Light Theme
@@ -61,21 +61,21 @@ class AppTheme {
       appBarTheme: const AppBarTheme(
         elevation: 0,
         centerTitle: true,
-        backgroundColor: surface,
+        backgroundColor: background, // Match scaffold for cleaner look
         foregroundColor: onSurface,
         systemOverlayStyle: SystemUiOverlayStyle.dark,
         titleTextStyle: TextStyle(
           fontSize: 20,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
           color: onSurface,
           fontFamily: 'Poppins',
         ),
       ),
       cardTheme: CardThemeData(
-        elevation: 0, // Flat design
+        elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: divider.withOpacity(0.5)),
+          borderRadius: BorderRadius.circular(20), // Increased radius
+          side: BorderSide(color: Colors.transparent), // No border by default
         ),
         color: surface,
       ),
@@ -85,14 +85,14 @@ class AppTheme {
           backgroundColor: primaryColor,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           textStyle: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
             fontFamily: 'Poppins',
-            letterSpacing: 0.5,
+            letterSpacing: 0.3,
           ),
         ),
       ),
@@ -101,9 +101,9 @@ class AppTheme {
           foregroundColor: primaryColor,
           side: const BorderSide(color: primaryColor, width: 1.5),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           textStyle: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -111,52 +111,47 @@ class AppTheme {
           ),
         ),
       ),
-      textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: primaryColor,
-          textStyle: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            fontFamily: 'Poppins',
-          ),
-        ),
-      ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.grey[50], // Slightly off-white
+        fillColor: Colors.white,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
+          borderSide: BorderSide(color: divider),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.transparent),
+          borderSide: BorderSide(color: divider),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: primaryColor.withOpacity(0.5), width: 1.5),
+          borderSide: BorderSide(color: primaryColor, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: errorColor),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        contentPadding: const EdgeInsets.all(20),
         hintStyle: const TextStyle(
-          fontSize: 14,
+          fontSize: 15,
           color: onSurfaceLight,
           fontFamily: 'Poppins',
         ),
-        prefixIconColor: onSurfaceLight, // Uniform icon color
+        labelStyle: const TextStyle(
+          color: onSurfaceLight,
+          fontFamily: 'Poppins',
+        ),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: surface,
         selectedItemColor: primaryColor,
         unselectedItemColor: onSurfaceLight,
         type: BottomNavigationBarType.fixed,
-        elevation: 8,
+        elevation: 16,
+        showSelectedLabels: true,
+        showUnselectedLabels: true,
         selectedLabelStyle: TextStyle(
           fontSize: 12,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w600,
           fontFamily: 'Poppins',
         ),
         unselectedLabelStyle: TextStyle(
@@ -164,11 +159,6 @@ class AppTheme {
           fontWeight: FontWeight.w500,
           fontFamily: 'Poppins',
         ),
-      ),
-      floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 4,
       ),
       dividerTheme: const DividerThemeData(
         color: divider,
@@ -178,56 +168,28 @@ class AppTheme {
       textTheme: const TextTheme(
         displayLarge: TextStyle(
           fontSize: 32,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w800,
           color: onSurface,
           fontFamily: 'Poppins',
+          letterSpacing: -0.5,
         ),
         displayMedium: TextStyle(
           fontSize: 28,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w800,
           color: onSurface,
           fontFamily: 'Poppins',
-        ),
-        displaySmall: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.w600,
-          color: onSurface,
-          fontFamily: 'Poppins',
-        ),
-        headlineLarge: TextStyle(
-          fontSize: 22,
-          fontWeight: FontWeight.w600,
-          color: onSurface,
-          fontFamily: 'Poppins',
-        ),
-        headlineMedium: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-          color: onSurface,
-          fontFamily: 'Poppins',
-        ),
-        headlineSmall: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-          color: onSurface,
-          fontFamily: 'Poppins',
+          letterSpacing: -0.5,
         ),
         titleLarge: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
           color: onSurface,
           fontFamily: 'Poppins',
         ),
         titleMedium: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
           color: onSurface,
-          fontFamily: 'Poppins',
-        ),
-        titleSmall: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-          color: onSurfaceLight,
           fontFamily: 'Poppins',
         ),
         bodyLarge: TextStyle(
@@ -235,34 +197,18 @@ class AppTheme {
           fontWeight: FontWeight.normal,
           color: onSurface,
           fontFamily: 'Poppins',
+          height: 1.5,
         ),
         bodyMedium: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.normal,
           color: onSurface,
           fontFamily: 'Poppins',
+          height: 1.5,
         ),
         bodySmall: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.normal,
-          color: onSurfaceLight,
-          fontFamily: 'Poppins',
-        ),
-        labelLarge: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-          color: onSurface,
-          fontFamily: 'Poppins',
-        ),
-        labelMedium: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-          color: onSurfaceLight,
-          fontFamily: 'Poppins',
-        ),
-        labelSmall: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w500,
           color: onSurfaceLight,
           fontFamily: 'Poppins',
         ),

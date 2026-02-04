@@ -117,6 +117,10 @@ class SyncSMSExpenses extends ExpenseEvent {
   List<Object?> get props => [daysBack];
 }
 
+class LoadDashboardSummary extends ExpenseEvent {
+  const LoadDashboardSummary();
+}
+
 class OnSMSExpenseDetected extends ExpenseEvent {
   final Expense expense;
   
@@ -138,6 +142,8 @@ class ExpenseState extends Equatable {
   final bool hasReachedMax;
   final String? errorMessage;
   final int? smsSyncCount;
+  final String? syncMessage;
+  final DashboardMetrics? dashboardMetrics;
 
   const ExpenseState({
     this.status = ExpenseStatus.initial,
@@ -148,6 +154,8 @@ class ExpenseState extends Equatable {
     this.hasReachedMax = false,
     this.errorMessage,
     this.smsSyncCount,
+    this.dashboardMetrics,
+    this.syncMessage,
   });
 
   ExpenseState copyWith({
@@ -159,6 +167,8 @@ class ExpenseState extends Equatable {
     bool? hasReachedMax,
     String? errorMessage,
     int? smsSyncCount,
+    String? syncMessage,
+    DashboardMetrics? dashboardMetrics,
   }) {
     return ExpenseState(
       status: status ?? this.status,
@@ -169,6 +179,8 @@ class ExpenseState extends Equatable {
       hasReachedMax: hasReachedMax ?? this.hasReachedMax,
       errorMessage: errorMessage, // Reset error on new state unless explicitly passed
       smsSyncCount: smsSyncCount, // Reset sync count unless explicitly passed
+      syncMessage: syncMessage,
+      dashboardMetrics: dashboardMetrics ?? this.dashboardMetrics,
     );
   }
 
@@ -181,7 +193,9 @@ class ExpenseState extends Equatable {
     summary, 
     hasReachedMax, 
     errorMessage, 
-    smsSyncCount
+    smsSyncCount,
+    syncMessage,
+    dashboardMetrics
   ];
 }
 
@@ -206,6 +220,7 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
     on<LoadAnalytics>(_onLoadAnalytics);
     on<SyncSMSExpenses>(_onSyncSMSExpenses);
     on<OnSMSExpenseDetected>(_onSMSExpenseDetected);
+    on<LoadDashboardSummary>(_onLoadDashboardSummary);
 
     // Listen to SMS expense stream
     _smsSubscription = _smsService.expenseStream.listen((expense) {
@@ -490,15 +505,29 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
   ) async {
     emit(state.copyWith(status: ExpenseStatus.loading));
     try {
-      final expenses = await _smsService.syncHistoricalSMS(
+      final result = await _smsService.syncHistoricalSMS(
         daysBack: event.daysBack ?? 30,
       );
       
+      final added = result['added'] as List<Expense>;
+      final duplicates = result['duplicates'] as int;
+
       // Reload expenses after sync
       add(const LoadExpenses(limit: 50));
       
+      String message;
+      if (added.isEmpty) {
+        message = duplicates > 0 
+            ? 'Data is up to date ($duplicates duplicates found)'
+            : 'No new expenses found';
+      } else {
+        message = 'Synced ${added.length} expenses' + 
+            (duplicates > 0 ? ' ($duplicates duplicates skipped)' : '');
+      }
+      
       emit(state.copyWith(
-        smsSyncCount: expenses.length,
+        smsSyncCount: added.length,
+        syncMessage: message,
       ));
     } catch (e) {
       emit(state.copyWith(
@@ -522,6 +551,30 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
     // Insert into current list if valid
     final updatedExpenses = List<Expense>.from(state.expenses)..insert(0, event.expense);
     emit(state.copyWith(expenses: updatedExpenses));
+    // Also refresh dashboard metrics if we can
+    add(const LoadDashboardSummary());
+  }
+
+  Future<void> _onLoadDashboardSummary(
+    LoadDashboardSummary event,
+    Emitter<ExpenseState> emit,
+  ) async {
+    try {
+      final metrics = await _db.getDashboardMetrics();
+      // Also load recent expenses (limit 5 for dashboard)
+      final expenses = await _db.getAllExpenses(limit: 5);
+      
+      emit(state.copyWith(
+        status: ExpenseStatus.success,
+        dashboardMetrics: metrics,
+        expenses: expenses,
+      ));
+    } catch (e) {
+      emit(state.copyWith(
+        status: ExpenseStatus.failure, 
+        errorMessage: 'Failed to load dashboard: $e'
+      ));
+    }
   }
 
   @override

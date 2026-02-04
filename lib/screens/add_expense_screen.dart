@@ -199,77 +199,292 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Type Selection Segmented Button
-                      Container(
-                        width: double.infinity,
-                        margin: const EdgeInsets.only(bottom: 24),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey[300]!),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () => setState(() => _selectedType = 'debit'),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  decoration: BoxDecoration(
-                                    color: _selectedType == 'debit' 
-                                        ? AppTheme.accentColor 
-                                        : Colors.transparent,
-                                    borderRadius: BorderRadius.horizontal(
-                                      left: const Radius.circular(11),
-                                      right: _selectedType == 'debit' 
-                                          ? const Radius.circular(11) 
-                                          : Radius.zero,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    'Debit',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: _selectedType == 'debit' 
-                                          ? Colors.white 
-                                          : Colors.grey[700],
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                child: Column(
+                  children: [
+                    // Top Section: Toggle & Amount
+                    Container(
+                      padding: const EdgeInsets.only(bottom: 24),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.05),
+                            offset: const Offset(0, 4),
+                            blurRadius: 16,
+                          ),
+                        ],
+                        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
+                      ),
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 16),
+                          // Type Toggle
+                          Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 48),
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[100],
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            child: Row(
+                              children: [
+                                _buildToggleOption('Debit', 'debit'),
+                                _buildToggleOption('Credit', 'credit'),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 32),
+
+                          // Amount Input
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 32),
+                            child: Column(
+                              children: [
+                                Text(
+                                  'Enter Amount',
+                                  style: TextStyle(
+                                    color: AppTheme.onSurfaceLight,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
-                              ),
-                            ),
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () => setState(() => _selectedType = 'credit'),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  decoration: BoxDecoration(
+                                const SizedBox(height: 8),
+                                TextFormField(
+                                  controller: _amountController,
+                                  keyboardType: TextInputType.number,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 48,
+                                    fontWeight: FontWeight.bold,
                                     color: _selectedType == 'credit' 
                                         ? AppTheme.secondaryColor 
-                                        : Colors.transparent,
-                                    borderRadius: BorderRadius.horizontal(
-                                      right: const Radius.circular(11),
-                                      left: _selectedType == 'credit' 
-                                          ? const Radius.circular(11) 
-                                          : Radius.zero,
+                                        : AppTheme.primaryColor,
+                                    height: 1.1,
+                                  ),
+                                  decoration: InputDecoration(
+                                    border: InputBorder.none,
+                                    enabledBorder: InputBorder.none,
+                                    focusedBorder: InputBorder.none,
+                                    hintText: '0',
+                                    hintStyle: TextStyle(
+                                      color: Colors.grey[300],
+                                    ),
+                                    prefix: Text(
+                                      '₹',
+                                      style: TextStyle(
+                                        fontSize: 32,
+                                        fontWeight: FontWeight.w600,
+                                        color: _selectedType == 'credit' 
+                                            ? AppTheme.secondaryColor 
+                                            : AppTheme.primaryColor,
+                                      ),
                                     ),
                                   ),
-                                  child: Text(
-                                    'Credit',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: _selectedType == 'credit' 
-                                          ? Colors.white 
-                                          : Colors.grey[700],
-                                      fontWeight: FontWeight.w600,
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) return 'Required';
+                                    if (double.tryParse(value) == null) return 'Invalid';
+                                    return null;
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Voice Indicator
+                    if (_isListening)
+                       Padding(
+                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                         child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppTheme.accentColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.mic, color: AppTheme.accentColor),
+                              const SizedBox(width: 8),
+                              const Text('Listening...', style: TextStyle(color: AppTheme.accentColor, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                         ),
+                       ),
+
+                    // Form Fields
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Split into categories',
+                              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                color: AppTheme.onSurfaceLight,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            // Category Selector
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: _categories.map((category) {
+                                  final isSelected = _selectedCategory == category.id;
+                                  final color = Color(category.color);
+                                  return GestureDetector(
+                                    onTap: () => setState(() => _selectedCategory = category.id),
+                                    child: Container(
+                                      margin: const EdgeInsets.only(right: 16),
+                                      child: Column(
+                                        children: [
+                                          AnimatedContainer(
+                                            duration: const Duration(milliseconds: 200),
+                                            padding: const EdgeInsets.all(16),
+                                            decoration: BoxDecoration(
+                                              color: isSelected ? color : color.withOpacity(0.1),
+                                              shape: BoxShape.circle,
+                                              boxShadow: isSelected ? [
+                                                BoxShadow(
+                                                  color: color.withOpacity(0.4),
+                                                  blurRadius: 10,
+                                                  offset: const Offset(0, 4),
+                                                ),
+                                              ] : [],
+                                            ),
+                                            child: Icon(
+                                              _getCategoryIcon(category.icon),
+                                              color: isSelected ? Colors.white : color,
+                                              size: 24,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            category.name,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                              color: isSelected ? AppTheme.onSurface : AppTheme.onSurfaceLight,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+
+                            const SizedBox(height: 24),
+
+                            // Details Card
+                            Container(
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: AppTheme.divider),
+                              ),
+                              child: Column(
+                                children: [
+                                  TextFormField(
+                                    controller: _titleController,
+                                    decoration: const InputDecoration(
+                                      labelText: 'What is this for?',
+                                      prefixIcon: Icon(Icons.title),
+                                      border: InputBorder.none,
+                                      enabledBorder: InputBorder.none,
+                                      focusedBorder: InputBorder.none,
+                                      contentPadding: EdgeInsets.zero,
+                                    ),
+                                    style: const TextStyle(fontWeight: FontWeight.w600),
+                                  ),
+                                  Divider(color: Colors.grey[100], height: 32),
+                                  InkWell(
+                                    onTap: _selectDate,
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(10),
+                                          decoration: BoxDecoration(
+                                            color: AppTheme.primaryColor.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          child: const Icon(Icons.calendar_today, color: AppTheme.primaryColor, size: 20),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Text(
+                                          DateFormat('EEEE, dd MMM').format(_selectedDate),
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        const Spacer(),
+                                        const Icon(Icons.chevron_right, color: Colors.grey),
+                                      ],
+                                    ),
+                                  ),
+                                  Divider(color: Colors.grey[100], height: 32),
+                                  TextFormField(
+                                    controller: _merchantController,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Merchant (Optional)',
+                                      prefixIcon: Icon(Icons.store),
+                                      border: InputBorder.none,
+                                      enabledBorder: InputBorder.none,
+                                      focusedBorder: InputBorder.none,
+                                      contentPadding: EdgeInsets.zero,
+                                    ),
+                                  ),
+                                  Divider(color: Colors.grey[100], height: 32),
+                                  TextFormField(
+                                    controller: _notesController,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Notes (Optional)',
+                                      prefixIcon: Icon(Icons.notes),
+                                      border: InputBorder.none,
+                                      enabledBorder: InputBorder.none,
+                                      focusedBorder: InputBorder.none,
+                                      contentPadding: EdgeInsets.zero,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            
+                            const SizedBox(height: 32),
+                            
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: _saveExpense,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: _selectedType == 'credit' 
+                                      ? AppTheme.secondaryColor 
+                                      : AppTheme.primaryColor,
+                                  padding: const EdgeInsets.symmetric(vertical: 18),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  elevation: 8,
+                                  shadowColor: (_selectedType == 'credit' 
+                                      ? AppTheme.secondaryColor 
+                                      : AppTheme.primaryColor).withOpacity(0.4),
+                                ),
+                                child: Text(
+                                  widget.expense != null ? 'Update Transaction' : 'Save Transaction',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
@@ -277,192 +492,44 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                           ],
                         ),
                       ),
-
-                      // Voice Input Indicator
-                      if (_isListening)
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                          margin: const EdgeInsets.only(bottom: 16),
-                          decoration: BoxDecoration(
-                            color: AppTheme.accentColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: AppTheme.accentColor.withOpacity(0.3),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.mic,
-                                color: AppTheme.accentColor,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  'Listening... Speak your expense',
-                                  style: TextStyle(
-                                    color: AppTheme.accentColor,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                      // Amount Field
-                      TextFormField(
-                        controller: _amountController,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: 'Amount',
-                          prefixText: '₹ ',
-                          prefixStyle: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: _selectedType == 'credit' 
-                                ? AppTheme.secondaryColor 
-                                : AppTheme.accentColor,
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(
-                              color: _selectedType == 'credit' 
-                                  ? AppTheme.secondaryColor 
-                                  : AppTheme.accentColor,
-                              width: 2,
-                            ),
-                          ),
-                        ),
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: _selectedType == 'credit' 
-                              ? AppTheme.secondaryColor 
-                              : AppTheme.accentColor,
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter amount';
-                          }
-                          if (double.tryParse(value) == null) {
-                            return 'Please enter valid amount';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Title Field
-                      TextFormField(
-                        controller: _titleController,
-                        decoration: const InputDecoration(
-                          labelText: 'Title',
-                          hintText: 'e.g., Lunch at restaurant',
-                          prefixIcon: Icon(Icons.title),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter title';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Category Selection
-                      Text(
-                        'Category',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: AppTheme.onSurfaceLight,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: _categories.map((category) {
-                          final isSelected = _selectedCategory == category.id;
-                          return ChoiceChip(
-                            label: Text(category.name),
-                            selected: isSelected,
-                            onSelected: (selected) {
-                              if (selected) {
-                                setState(() => _selectedCategory = category.id);
-                              }
-                            },
-                            avatar: Icon(
-                              _getCategoryIcon(category.icon),
-                              size: 18,
-                              color: isSelected 
-                                  ? Colors.white 
-                                  : Color(category.color),
-                            ),
-                            selectedColor: Color(category.color),
-                            labelStyle: TextStyle(
-                              color: isSelected ? Colors.white : AppTheme.onSurface,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Date Selection
-                      InkWell(
-                        onTap: _selectDate,
-                        child: InputDecorator(
-                          decoration: const InputDecoration(
-                            labelText: 'Date',
-                            prefixIcon: Icon(Icons.calendar_today),
-                          ),
-                          child: Text(
-                            DateFormat('dd MMM yyyy').format(_selectedDate),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Merchant Field
-                      TextFormField(
-                        controller: _merchantController,
-                        decoration: const InputDecoration(
-                          labelText: 'Merchant (Optional)',
-                          hintText: 'e.g., Swiggy, Amazon',
-                          prefixIcon: Icon(Icons.store),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Notes Field
-                      TextFormField(
-                        controller: _notesController,
-                        decoration: const InputDecoration(
-                          labelText: 'Notes (Optional)',
-                          hintText: 'Add any additional details',
-                          prefixIcon: Icon(Icons.notes),
-                        ),
-                        maxLines: 3,
-                      ),
-                      const SizedBox(height: 32),
-
-                      // Save Button
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _saveExpense,
-                          child: Text(
-                            widget.expense != null 
-                                ? 'Update Expense' 
-                                : 'Add Expense',
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
+      ),
+    );
+  }
+
+  Widget _buildToggleOption(String label, String value) {
+    final isSelected = _selectedType == value;
+    final color = value == 'credit' ? AppTheme.secondaryColor : AppTheme.primaryColor;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedType = value),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.white : Colors.transparent,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: isSelected ? [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ] : [],
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: isSelected ? color : Colors.grey[600],
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
+        ),
       ),
     );
   }

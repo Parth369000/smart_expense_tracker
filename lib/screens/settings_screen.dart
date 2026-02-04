@@ -38,181 +38,240 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-      ),
+    return BlocListener<ExpenseBloc, ExpenseState>(
+      listener: (context, state) {
+        if (state.syncMessage != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.syncMessage!)),
+          );
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Settings'),
+        ),
       body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Data Management Section
-            _buildSectionHeader('Data Management'),
-            _buildSettingTile(
-              icon: Icons.sync,
-              title: 'Sync SMS Expenses',
-              subtitle: 'Import expenses from SMS history',
-              onTap: () => _showSyncDialog(context),
-            ),
-            _buildSettingTile(
-              icon: Icons.download,
-              title: 'Export to CSV',
-              subtitle: 'Download expense data as CSV',
-              onTap: () => _showExportDialog(context),
-            ),
-            _buildSettingTile(
-              icon: Icons.delete_outline,
-              title: 'Clear All Data',
-              subtitle: 'Delete all expenses and budgets',
-              color: AppTheme.errorColor,
-              onTap: () => _showClearDataDialog(context),
-            ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              // Data Management Section
+              _buildSectionCard(
+                title: 'Data Management',
+                children: [
+                  _buildSettingTile(
+                    icon: Icons.sync,
+                    title: 'Sync SMS Expenses',
+                    subtitle: 'Import from SMS',
+                    color: AppTheme.primaryColor,
+                    onTap: () => _showSyncDialog(context),
+                  ),
+                  _buildSettingTile(
+                    icon: Icons.download,
+                    title: 'Export to CSV',
+                    subtitle: 'Download data',
+                    color: AppTheme.secondaryColor,
+                    onTap: () => _showExportDialog(context),
+                  ),
+                  _buildSettingTile(
+                    icon: Icons.delete_outline,
+                    title: 'Clear All Data',
+                    subtitle: 'Reset everything',
+                    color: AppTheme.errorColor,
+                    onTap: () => _showClearDataDialog(context),
+                    isLast: true,
+                  ),
+                ],
+              ),
 
-            // Notifications Section
-            _buildSectionHeader('Notifications'),
-            SwitchListTile(
-              secondary: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  Icons.notifications,
-                  color: AppTheme.primaryColor,
-                ),
-              ),
-              title: const Text('Enable Notifications'),
-              subtitle: const Text('Get alerts for expenses and budgets'),
-              value: _notificationsEnabled,
-              onChanged: (value) {
-                setState(() => _notificationsEnabled = value);
-                if (value) {
-                  _notificationService.initialize();
-                }
-              },
-            ),
-            SwitchListTile(
-              secondary: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppTheme.secondaryColor.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  Icons.alarm,
-                  color: AppTheme.secondaryColor,
-                ),
-              ),
-              title: const Text('Daily Reminder'),
-              subtitle: const Text('Remind to track expenses daily'),
-              value: _dailyReminder,
-              onChanged: _notificationsEnabled
-                  ? (value) {
+              const SizedBox(height: 24),
+
+              // Notifications Section
+              _buildSectionCard(
+                title: 'Notifications',
+                children: [
+                  _buildSwitchTile(
+                    icon: Icons.notifications,
+                    title: 'Enable Notifications',
+                    subtitle: 'Get alerts',
+                    value: _notificationsEnabled,
+                    color: AppTheme.primaryColor,
+                    onChanged: (value) {
+                      setState(() => _notificationsEnabled = value);
+                      if (value) _notificationService.initialize();
+                    },
+                  ),
+                  _buildSwitchTile(
+                    icon: Icons.alarm,
+                    title: 'Daily Reminder',
+                    subtitle: '20:00 Reminder',
+                    value: _dailyReminder,
+                    color: AppTheme.secondaryColor,
+                    enabled: _notificationsEnabled,
+                    onChanged: (value) {
                       setState(() => _dailyReminder = value);
                       if (value) {
-                        _notificationService.scheduleDailyReminder(
-                          hour: 20,
-                          minute: 0,
-                        );
+                        _notificationService.scheduleDailyReminder(hour: 20, minute: 0);
                       } else {
                         _notificationService.cancelNotification(3000);
                       }
-                    }
-                  : null,
-            ),
-            SwitchListTile(
-              secondary: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppTheme.warningColor.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  Icons.account_balance_wallet,
-                  color: AppTheme.warningColor,
-                ),
+                    },
+                  ),
+                  _buildSwitchTile(
+                    icon: Icons.account_balance_wallet,
+                    title: 'Budget Alerts',
+                    subtitle: 'Near limit alerts',
+                    value: _budgetAlerts,
+                    color: AppTheme.warningColor,
+                    enabled: _notificationsEnabled,
+                    isLast: true,
+                    onChanged: (value) => setState(() => _budgetAlerts = value),
+                  ),
+                ],
               ),
-              title: const Text('Budget Alerts'),
-              subtitle: const Text('Alert when nearing budget limit'),
-              value: _budgetAlerts,
-              onChanged: _notificationsEnabled
-                  ? (value) => setState(() => _budgetAlerts = value)
-                  : null,
-            ),
 
-            // Auto-Tracking Section
-            _buildSectionHeader('Auto-Tracking'),
-            SwitchListTile(
-              secondary: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppTheme.secondaryColor.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  Icons.sms,
-                  color: AppTheme.secondaryColor,
-                ),
+              const SizedBox(height: 24),
+
+              // Auto-Tracking Section
+              _buildSectionCard(
+                title: 'Auto-Tracking',
+                children: [
+                  _buildSwitchTile(
+                    icon: Icons.sms,
+                    title: 'SMS Auto-Tracking',
+                    subtitle: 'Capture from SMS',
+                    value: _smsEnabled,
+                    color: AppTheme.secondaryColor,
+                    isLast: true,
+                    onChanged: (value) async {
+                      if (value) {
+                        final granted = await _smsService.requestPermissions();
+                        setState(() => _smsEnabled = granted);
+                        if (granted) _smsService.startListening();
+                      } else {
+                        setState(() => _smsEnabled = false);
+                      }
+                    },
+                  ),
+                ],
               ),
-              title: const Text('SMS Auto-Tracking'),
-              subtitle: const Text('Automatically capture expenses from SMS'),
-              value: _smsEnabled,
-              onChanged: (value) async {
-                if (value) {
-                  final granted = await _smsService.requestPermissions();
-                  setState(() => _smsEnabled = granted);
-                  if (granted) {
-                    _smsService.startListening();
-                  }
-                } else {
-                  setState(() => _smsEnabled = false);
-                }
-              },
-            ),
 
-            // About Section
-            _buildSectionHeader('About'),
-            _buildSettingTile(
-              icon: Icons.info,
-              title: 'About App',
-              subtitle: 'Version 1.0.0',
-              onTap: () => _showAboutDialog(context),
-            ),
-            _buildSettingTile(
-              icon: Icons.privacy_tip,
-              title: 'Privacy Policy',
-              subtitle: 'How we handle your data',
-              onTap: () {
-                // Open privacy policy
-              },
-            ),
-            _buildSettingTile(
-              icon: Icons.help,
-              title: 'Help & Support',
-              subtitle: 'Get help using the app',
-              onTap: () {
-                // Open help
-              },
-            ),
+              const SizedBox(height: 24),
 
-            const SizedBox(height: 32),
-          ],
+              // About Section
+              _buildSectionCard(
+                title: 'About',
+                children: [
+                  _buildSettingTile(
+                    icon: Icons.info,
+                    title: 'About App',
+                    subtitle: 'Version 1.0.0',
+                    color: AppTheme.primaryColor,
+                    onTap: () => _showAboutDialog(context),
+                  ),
+                  _buildSettingTile(
+                    icon: Icons.privacy_tip,
+                    title: 'Privacy Policy',
+                    subtitle: 'Data usage',
+                    color: AppTheme.accentColor,
+                    onTap: () {},
+                  ),
+                  _buildSettingTile(
+                    icon: Icons.help,
+                    title: 'Help & Support',
+                    subtitle: 'Get help',
+                    color: AppTheme.warningColor,
+                    isLast: true,
+                    onTap: () {},
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 32),
+            ],
+          ),
         ),
+      ),
       ),
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-      child: Text(
-        title,
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-          color: AppTheme.primaryColor,
-          fontWeight: FontWeight.w600,
+  Widget _buildSectionCard({required String title, required List<Widget> children}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.onSurfaceLight,
+            ),
+          ),
         ),
-      ),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(children: children),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSwitchTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool value,
+    required Color color,
+    required Function(bool) onChanged,
+    bool enabled = true,
+    bool isLast = false,
+  }) {
+    return Column(
+      children: [
+        SwitchListTile(
+          value: value,
+          onChanged: enabled ? onChanged : null,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          secondary: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: enabled ? color : Colors.grey, size: 22),
+          ),
+          title: Text(
+            title,
+            style: TextStyle(
+              fontWeight: FontWeight.w500,
+              color: enabled ? AppTheme.onSurface : Colors.grey,
+            ),
+          ),
+          subtitle: Text(
+            subtitle,
+            style: TextStyle(
+              fontSize: 12,
+              color: enabled ? AppTheme.onSurfaceLight : Colors.grey[400],
+            ),
+          ),
+          activeColor: AppTheme.primaryColor,
+        ),
+        if (!isLast)
+          Divider(height: 1, indent: 64, color: Colors.grey.withOpacity(0.1)),
+      ],
     );
   }
 
@@ -221,23 +280,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required String title,
     required String subtitle,
     required VoidCallback onTap,
-    Color? color,
+    required Color color,
+    bool isLast = false,
   }) {
-    final iconColor = color ?? AppTheme.onSurface;
-    
-    return ListTile(
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: iconColor.withOpacity(0.15),
-          borderRadius: BorderRadius.circular(8),
+    return Column(
+      children: [
+        ListTile(
+          onTap: onTap,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          leading: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 22),
+          ),
+          title: Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.w500),
+          ),
+          subtitle: Text(
+            subtitle,
+            style: const TextStyle(fontSize: 12, color: AppTheme.onSurfaceLight),
+          ),
+          trailing: const Icon(Icons.chevron_right, size: 20, color: AppTheme.onSurfaceLight),
         ),
-        child: Icon(icon, color: iconColor),
-      ),
-      title: Text(title),
-      subtitle: Text(subtitle),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: onTap,
+        if (!isLast)
+          Divider(height: 1, indent: 64, color: Colors.grey.withOpacity(0.1)),
+      ],
     );
   }
 
